@@ -19,4 +19,3 @@ A UI Framework for ESP8266/ESP32 written in C++.
 Page p("Demo");
 Card c("Hello World");
 p.add(c.render());
-# FlareDom
