@@ -9,13 +9,21 @@ class Element {
 private:
     String tag;
     String innerText;
+    String rawHtml;
     std::map<String, String> attrs;
     Style styleObj;
     std::vector<Element> children;
     String idStr;
+    bool isSelfClosing = false;
 
 public:
-    Element(const String &t) : tag(t) {}
+    Element(const String &t) : tag(t) {
+        // Self-closing tags
+        if (t == "input" || t == "br" || t == "hr" || t == "img" ||
+            t == "meta" || t == "link") {
+            isSelfClosing = true;
+        }
+    }
 
     static Element create(const String &tag) {
         return Element(tag);
@@ -23,10 +31,20 @@ public:
 
     Style &style = styleObj;
 
+    // ─── Text & Content ───
+
     Element &text(const String &t) {
         innerText = t;
         return *this;
     }
+
+    // Feature 3: Raw HTML content
+    Element &html(const String &h) {
+        rawHtml = h;
+        return *this;
+    }
+
+    // ─── Attributes ───
 
     Element &attr(const String &name, const String &value) {
         attrs[name] = value;
@@ -55,7 +73,44 @@ public:
         return *this;
     }
 
-    String render() {   // ← أزلنا const هنا
+    // Feature 1: onClick handler
+    Element &onClick(const String &handler) {
+        attrs["onclick"] = handler;
+        return *this;
+    }
+
+    // Feature 2: data-* attributes
+    Element &data(const String &key, const String &value) {
+        attrs["data-" + key] = value;
+        return *this;
+    }
+
+    // Feature 4: disabled / readonly
+    Element &disabled() {
+        attrs["disabled"] = "disabled";
+        return *this;
+    }
+
+    Element &readonly() {
+        attrs["readonly"] = "readonly";
+        return *this;
+    }
+
+    // Feature 5: tooltip (title attribute)
+    Element &tooltip(const String &tip) {
+        attrs["title"] = tip;
+        return *this;
+    }
+
+    // Generic inline event handler
+    Element &onEvent(const String &event, const String &handler) {
+        attrs["on" + event] = handler;
+        return *this;
+    }
+
+    // ─── Render ───
+
+    String render() {
         if (tag == "script") {
             String s = "<script>";
             s += innerText;
@@ -71,12 +126,27 @@ public:
         }
 
         for (auto &kv : attrs) {
-            s += " " + kv.first + "=\"" + kv.second + "\"";
+            if (kv.first == "disabled" || kv.first == "readonly" ||
+                kv.first == "checked" || kv.first == "required" ||
+                kv.first == "autofocus") {
+                s += " " + kv.first;
+            } else {
+                s += " " + kv.first + "=\"" + kv.second + "\"";
+            }
+        }
+
+        if (isSelfClosing) {
+            s += " />";
+            return s;
         }
 
         s += ">";
 
-        s += innerText;
+        if (rawHtml.length()) {
+            s += rawHtml;
+        } else {
+            s += innerText;
+        }
 
         for (auto &child : children) {
             s += child.render();

@@ -13,6 +13,7 @@
   <a href="https://github.com/Moaaz-i/FlareDom/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Moaaz-i/FlareDom?style=flat-square&color=ff6b35&labelColor=0d1117" alt="License" /></a>
   <a href="https://www.arduino.cc/reference/en/libraries/"><img src="https://img.shields.io/badge/platform-ESP8266%20|%20ESP32-blue?style=flat-square&labelColor=0d1117" alt="Platform" /></a>
   <a href="#"><img src="https://img.shields.io/badge/language-C++-f34b7d?style=flat-square&labelColor=0d1117" alt="C++" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/components-13+-8b5cf6?style=flat-square&labelColor=0d1117" alt="Components" /></a>
 </p>
 
 <br />
@@ -30,32 +31,47 @@
 | Writing raw HTML strings in `server.send()` | **Component-based** — build UI like building blocks |
 | Managing messy string concatenation | **Fluent API** — chainable methods for clean code |
 | No routing, no structure | **Built-in Router** — multi-page apps with one line |
-| Inline styles everywhere | **Style system** — global CSS + per-element styles |
+| Inline styles everywhere | **Style system** — 25+ CSS shortcuts + themes |
 | No JS management | **ScriptManager** — inject & organize JavaScript cleanly |
 | No HTML minification | **HtmlBuilder** — auto-minified output for faster loads |
+| Repetitive AJAX polling code | **LiveValue** — auto-updating values in one line |
+| Designing from scratch every time | **ThemeManager** — 4 pre-built themes ready to use |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-FlareDom
+FlareDom v1.1.0
 ├── Core
 │   ├── Element         — Virtual DOM node with fluent API
-│   ├── Page            — Full HTML document container
-│   ├── Style           — CSS rule builder
+│   ├── Page            — Full HTML5 document (meta, favicon, external CSS, lang)
+│   ├── Style           — CSS rule builder with 25+ shortcut methods
+│   ├── Animation       — CSS @keyframes definitions
 │   ├── Component       — Abstract base for reusable widgets
 │   └── IDGen           — Auto-generated unique element IDs
 │
 ├── Engine
 │   ├── HtmlBuilder     — Renders & minifies final HTML
 │   ├── Router          — URL-to-Page mapping with 404 support
-│   └── ScriptManager   — JavaScript injection & event binding
+│   ├── ScriptManager   — JavaScript injection & event binding
+│   ├── ThemeManager    — Pre-built themes (dark, light, neon, cyberpunk)
+│   └── LiveValue       — Auto-updating AJAX values
 │
-└── Widgets
+└── Components (13 widgets)
     ├── Card            — Dashboard header card
     ├── Gauge           — SVG circular gauge (animated)
-    └── StatusPanel     — Status display with dynamic text
+    ├── StatusPanel     — Dynamic status display
+    ├── Button          — 6 variants with hover animations
+    ├── Table           — Dynamic table with striped rows
+    ├── Input           — Form input with label & validation
+    ├── Navbar          — Sticky navigation bar with glassmorphism
+    ├── ProgressBar     — Gradient progress bar with 4 colors
+    ├── Badge           — Status badge (5 variants)
+    ├── AlertBox        — Dismissible alert notifications
+    ├── Switch          — Toggle switch with smooth animation
+    ├── Footer          — Page footer with links
+    └── Container       — Flex/Grid layout helper
 ```
 
 ---
@@ -85,15 +101,12 @@ ESP8266WebServer server(80);
 
 Page buildPage() {
     Page p("My Page");
+    p.setGlobalCSS(ThemeManager::dark());
 
-    p.setGlobalCSS(
-        "body { background: #111; color: #fff; font-family: Consolas; "
-        "text-align: center; padding-top: 50px; }"
-        ".box { padding: 20px; background: #222; border-radius: 12px; "
-        "display: inline-block; }"
-    );
+    Element box = Element::create("div");
+    box.style.bg("#1e293b").padding("30px").radius("16px")
+       .display("inline-block").shadow("0 8px 32px rgba(0,0,0,0.3)");
 
-    Element box = Element::create("div").addClass("box");
     box.addChild(Element::create("h1").text("Hello FlareDom!"));
     box.addChild(Element::create("p").text("Built entirely in C++"));
 
@@ -143,11 +156,28 @@ Element container = Element::create("div");
 container.addChild(Element::create("h1").text("Title"));
 container.addChild(Element::create("p").text("Description"));
 
-// Inline styles
+// Style shortcuts (NEW in v1.1)
 Element styled = Element::create("div");
-styled.style.add("background: #222");
-styled.style.add("border-radius: 12px");
-styled.style.add("padding: 20px");
+styled.style.bg("#222").color("#fff").padding("20px").radius("12px");
+
+// Click handler (NEW in v1.1)
+Element btn = Element::create("button")
+    .text("Click Me")
+    .onClick("alert('Hello!')");
+
+// Data attributes (NEW in v1.1)
+Element sensor = Element::create("div")
+    .data("sensor", "temp")
+    .data("value", "25.5");
+
+// Raw HTML content (NEW in v1.1)
+Element rich = Element::create("div")
+    .html("<b>Bold</b> and <i>italic</i>");
+
+// Tooltip (NEW in v1.1)
+Element tip = Element::create("span")
+    .text("Hover me")
+    .tooltip("More info here");
 
 // Auto-generate unique IDs
 Element el = Element::create("span").ensureId("sensor");
@@ -158,12 +188,76 @@ Element el = Element::create("span").ensureId("sensor");
 |---|---|
 | `Element::create(tag)` | Create a new element with the given HTML tag |
 | `.text(content)` | Set the inner text content |
+| `.html(rawHtml)` | Set raw HTML content *(v1.1)* |
 | `.attr(name, value)` | Set an HTML attribute |
 | `.addClass(className)` | Add a CSS class (supports multiple calls) |
 | `.addChild(element)` | Append a child element |
 | `.ensureId(prefix)` | Auto-assign a unique ID if none exists |
+| `.onClick(handler)` | Set inline click handler *(v1.1)* |
+| `.onEvent(event, handler)` | Set any inline event handler *(v1.1)* |
+| `.data(key, value)` | Set a `data-*` attribute *(v1.1)* |
+| `.disabled()` | Mark element as disabled *(v1.1)* |
+| `.readonly()` | Mark element as readonly *(v1.1)* |
+| `.tooltip(text)` | Add a tooltip (title attribute) *(v1.1)* |
 | `.style.add(rule)` | Add an inline CSS rule |
 | `.render()` | Generate the HTML string |
+
+---
+
+### `Style` — CSS Shortcuts *(v1.1)*
+
+Chain CSS properties with clean shortcut methods instead of writing raw strings.
+
+```cpp
+Element card = Element::create("div");
+card.style
+    .bg("#1e293b")
+    .color("#f1f5f9")
+    .padding("24px")
+    .margin("16px")
+    .radius("16px")
+    .fontSize("14px")
+    .border("1px solid rgba(255,255,255,0.1)")
+    .shadow("0 4px 24px rgba(0,0,0,0.2)")
+    .transition("all 0.3s ease")
+    .display("flex")
+    .gap("12px")
+    .justifyContent("center")
+    .alignItems("center");
+```
+
+<details>
+<summary><b>All 25 style shortcuts</b></summary>
+
+| Method | CSS Property |
+|---|---|
+| `.bg(val)` | `background` |
+| `.color(val)` | `color` |
+| `.padding(val)` | `padding` |
+| `.margin(val)` | `margin` |
+| `.radius(val)` | `border-radius` |
+| `.fontSize(val)` | `font-size` |
+| `.fontWeight(val)` | `font-weight` |
+| `.border(val)` | `border` |
+| `.width(val)` | `width` |
+| `.height(val)` | `height` |
+| `.maxWidth(val)` | `max-width` |
+| `.minHeight(val)` | `min-height` |
+| `.display(val)` | `display` |
+| `.textAlign(val)` | `text-align` |
+| `.opacity(val)` | `opacity` |
+| `.cursor(val)` | `cursor` |
+| `.shadow(val)` | `box-shadow` |
+| `.transition(val)` | `transition` |
+| `.overflow(val)` | `overflow` |
+| `.position(val)` | `position` |
+| `.gap(val)` | `gap` |
+| `.flexDirection(val)` | `flex-direction` |
+| `.justifyContent(val)` | `justify-content` |
+| `.alignItems(val)` | `align-items` |
+| `.gridTemplateColumns(val)` | `grid-template-columns` |
+
+</details>
 
 ---
 
@@ -174,19 +268,52 @@ A `Page` wraps elements into a full HTML5 document with `<!DOCTYPE>`, `<head>`, 
 ```cpp
 Page p("Dashboard");
 
-// Global CSS applies to the entire page
-p.setGlobalCSS(
-    "body { background: #0a0a0a; color: #fff; }"
-    "h1 { color: #00ff88; }"
-);
+// Apply a pre-built theme (NEW in v1.1)
+p.setGlobalCSS(ThemeManager::dark());
 
-// Add elements to the page body
+// Add custom CSS on top
+p.appendCSS("h1 { color: #00ff88; }");
+
+// Set language (auto-detects RTL) (NEW in v1.1)
+p.setLang("en");  // → dir="ltr"
+p.setLang("ar");  // → dir="rtl"
+
+// Meta tags (NEW in v1.1)
+p.addMeta("description", "My IoT Dashboard");
+p.addMeta("author", "Moaaz");
+
+// External CSS (NEW in v1.1)
+p.addExternalCSS("https://fonts.googleapis.com/css2?family=Inter");
+
+// Favicon (NEW in v1.1)
+p.addFavicon("https://example.com/icon.png");
+
+// CSS Animations (NEW in v1.1)
+Animation fadeIn("fadeIn", "from{opacity:0}to{opacity:1}");
+p.addAnimation(fadeIn);
+
+// Add elements
 p.add(Element::create("h1").text("Welcome"));
-p.add(myComponent.render());
 
 // Render the complete HTML document
 String html = p.render();
 ```
+
+---
+
+### `ThemeManager` — Pre-built Themes *(v1.1)*
+
+Four professionally designed themes with CSS custom properties.
+
+```cpp
+// Apply any theme with one line
+p.setGlobalCSS(ThemeManager::dark());      // Clean dark mode
+p.setGlobalCSS(ThemeManager::light());     // Clean light mode
+p.setGlobalCSS(ThemeManager::neon());      // Green neon / hacker
+p.setGlobalCSS(ThemeManager::cyberpunk()); // Pink/purple cyberpunk
+```
+
+Each theme provides CSS variables: `--bg-primary`, `--bg-secondary`, `--bg-card`, `--text-primary`, `--text-secondary`, `--accent`, `--accent-glow`, `--border`, `--success`, `--warning`, `--danger`.
 
 ---
 
@@ -218,13 +345,153 @@ TemperatureCard temp("Room Temp", 23.5);
 p.add(temp.render());
 ```
 
-**Built-in Components:**
+---
+
+### Built-in Components
+
+#### Original Components
 
 | Component | Description |
 |---|---|
 | `Card(title)` | Dashboard header card with branding |
 | `Gauge()` | SVG circular gauge with animated arc |
 | `StatusPanel()` | Status display with dynamic color-coded text |
+
+#### New Components *(v1.1)*
+
+**`Button`** — Interactive buttons with 6 variants:
+```cpp
+Button btn("Submit", "handleSubmit()");
+btn.setVariant("primary"); // primary, success, danger, warning, outline, ghost
+p.appendCSS(Button::css());
+p.add(btn.render());
+```
+
+**`Table`** — Dynamic HTML tables:
+```cpp
+Table t;
+t.setHeaders({"Name", "Value", "Status"});
+t.addRow({"Temperature", "25°C", "Normal"});
+t.addRow({"Humidity", "60%", "OK"});
+p.appendCSS(Table::css());
+p.add(t.render());
+```
+
+**`Input`** — Form fields with labels:
+```cpp
+Input nameField("text", "username", "Enter your name");
+nameField.setLabel("Username").required();
+p.appendCSS(Input::css());
+p.add(nameField.render());
+```
+
+**`Navbar`** — Sticky navigation bar:
+```cpp
+Navbar nav("FlareDom");
+nav.addLink("/", "Home");
+nav.addLink("/settings", "Settings");
+nav.addLink("/about", "About");
+p.appendCSS(Navbar::css());
+p.add(nav.render());
+```
+
+**`ProgressBar`** — Animated progress bars:
+```cpp
+ProgressBar pb(75, "success"); // 75%, green gradient
+pb.setLabel("Upload Progress");
+p.appendCSS(ProgressBar::css());
+p.add(pb.render());
+```
+
+**`Badge`** — Status indicators:
+```cpp
+Badge online("Online", "success");   // success, warning, danger, info, neutral
+p.appendCSS(Badge::css());
+p.add(online.render());
+```
+
+**`AlertBox`** — Notification boxes:
+```cpp
+AlertBox alert("success", "Connected!", "All sensors are online.");
+alert.setDismissible(true);
+p.appendCSS(AlertBox::css());
+p.add(alert.render());
+```
+
+**`Switch`** — Toggle switches:
+```cpp
+Switch sw("darkMode", true);
+sw.onChange("toggleTheme()");
+p.appendCSS(Switch::css());
+p.add(sw.render());
+```
+
+**`Footer`** — Page footer:
+```cpp
+Footer f("© 2026 My Project");
+f.addLink("GitHub", "https://github.com/...");
+f.addLink("Docs", "/docs");
+p.appendCSS(Footer::css());
+p.add(f.render());
+```
+
+**`Container`** — Flex/Grid layout:
+```cpp
+// Flex layout
+Container row("flex");
+row.gap("20px").justify("center").wrap(true);
+row.add(card1.render());
+row.add(card2.render());
+p.add(row.render());
+
+// Grid layout
+Container grid("grid");
+grid.columns(3).gap("16px").maxWidth("900px");
+grid.add(widget1);
+grid.add(widget2);
+grid.add(widget3);
+p.add(grid.render());
+```
+
+---
+
+### `LiveValue` — Auto-Updating Values *(v1.1)*
+
+Fetch values from an endpoint and auto-update the display — with one line.
+
+```cpp
+LiveValue temp("/api/temp", "tempDisplay", 1000); // endpoint, elementId, ms
+temp.suffix("°C");
+
+p.appendCSS(LiveValue::css());
+p.add(temp.render());   // The display element
+p.add(temp.script());   // The auto-fetch script
+```
+
+On the server side:
+```cpp
+server.on("/api/temp", []() {
+    float t = readTemperature();
+    server.send(200, "text/plain", String(t));
+});
+```
+
+---
+
+### `Animation` — CSS Keyframes *(v1.1)*
+
+Define CSS animations and apply them to elements.
+
+```cpp
+Animation fadeIn("fadeIn", "from{opacity:0}to{opacity:1}");
+Animation pulse("pulse", "0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}");
+
+p.addAnimation(fadeIn);
+p.addAnimation(pulse);
+
+Element box = Element::create("div");
+box.style.add("animation: fadeIn 0.5s ease, pulse 2s infinite");
+```
 
 ---
 
@@ -313,6 +580,24 @@ Open them from Arduino IDE: **File** → **Examples** → **FlareDom**
 - Arduino IDE 1.8+ or PlatformIO
 - ESP8266 / ESP32 board package installed
 - C++11 or later (default for ESP cores)
+
+---
+
+## 📋 Changelog
+
+### v1.1.0 — 20 New Features
+- **Element**: `onClick()`, `onEvent()`, `data()`, `html()`, `disabled()`, `readonly()`, `tooltip()`, self-closing tag support
+- **Style**: 25 CSS shortcut methods (`bg()`, `color()`, `padding()`, `radius()`, `shadow()`, etc.)
+- **Animation**: CSS `@keyframes` system
+- **Page**: `addMeta()`, `addExternalCSS()`, `addFavicon()`, `setLang()` (auto RTL), `appendCSS()`, `addAnimation()`
+- **ThemeManager**: 4 pre-built themes (dark, light, neon, cyberpunk) with CSS custom properties
+- **LiveValue**: Auto-updating AJAX values with `prefix()`/`suffix()` formatting
+- **New Components**: Button, Table, Input, Navbar, ProgressBar, Badge, AlertBox, Switch, Footer, Container
+
+### v1.0.0 — Initial Release
+- Core: Element, Page, Style, Component, IDGen
+- Engine: HtmlBuilder, ScriptManager, Router
+- Widgets: Card, Gauge, StatusPanel
 
 ---
 
