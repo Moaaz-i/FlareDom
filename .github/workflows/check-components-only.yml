@@ -1,0 +1,49 @@
+name: Check PR Components Only
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get modified files
+        id: files
+        run: |
+          # Get the list of all changed files in the PR
+          git diff --name-status origin/${{ github.base_ref }}...HEAD > changes.txt
+          cat changes.txt
+
+      - name: Validate Changes
+        run: |
+          ALLOWED_ONLY_NEW=false
+          VIOLATION=false
+
+          while read -r status file; do
+            # If the file is inside src/components/
+            if [[ "$file" =~ ^src/components/ ]]; then
+              if [ "$status" = "A" ]; then
+                echo "✅ Allowed: Added new component -> $file"
+              else
+                echo "❌ Violation: Modifying or deleting existing components is not allowed -> [$status] $file"
+                VIOLATION=true
+              fi
+            else
+              # Any change outside src/components/ is forbidden
+              echo "❌ Violation: Changes outside src/components/ are not allowed -> [$status] $file"
+              VIOLATION=true
+            fi
+          done < changes.txt
+
+          if [ "$VIOLATION" = "true" ]; then
+            echo "Error: Pull Request contains forbidden changes. Only adding new files to 'src/components/' is allowed."
+            exit 1
+          else
+            echo "Success: All changes are valid."
+          fi
