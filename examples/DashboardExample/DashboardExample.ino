@@ -1,10 +1,24 @@
-#include <ESP8266WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <FlareDom.h>
 
-ESP8266WebServer server(80);
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <WiFi.h>
+#endif
+
+AsyncWebServer server(80);
 Router router(&server);
+AsyncWebSocket ws("/ws");
 
 int gasValue = 0;
+
+void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_CONNECT) {
+        Serial.println("WebSocket client connected");
+        client->text(String(gasValue));
+    }
+}
 
 Page dashboardPage() {
     Page p("Dashboard Example");
@@ -24,13 +38,14 @@ Page dashboardPage() {
     p.add(gauge.render());
     p.add(status.render());
 
-    ScriptManager sm;
+    // Use WebSocketValue instead of LiveValue for real-time updates!
+    WebSocketValue liveGas("ws://" + WiFi.localIP().toString() + "/ws", "gasVal");
+    p.add(liveGas.render());
+    p.add(liveGas.script());
 
+    ScriptManager sm;
     sm.add(
-        "function updateGas(){"
-        " fetch('/gas').then(r=>r.text()).then(v=>{"
-        "   document.getElementById('gasVal').innerText=v.padStart(2,'0');"
-        "   let val=parseInt(v);"
+        "function updateStatus(val){"
         "   let circ=2*Math.PI*90;"
         "   let off=circ-(val/100)*circ;"
         "   document.getElementById('gaugeBar').style.strokeDashoffset=off;"
@@ -40,11 +55,14 @@ Page dashboardPage() {
         "     document.getElementById('statusLabel').innerText='Warning: relative increase 🟡';}"
         "   else{document.documentElement.style.setProperty('--current-color','var(--neon-red)');"
         "     document.getElementById('statusLabel').innerText='Danger: gas leak! 🚨';}"
-        " });"
         "}"
-        "setInterval(updateGas, 500);"
+        // Set up mutation observer or callback hook in socket logic if needed, 
+        // or poll local DOM value:
+        "setInterval(function(){"
+        "  let v = parseInt(document.getElementById('gasVal').innerText) || 0;"
+        "  updateStatus(v);"
+        "}, 200);"
     );
-
     p.add(sm.render());
 
     return p;
@@ -56,16 +74,22 @@ void setup() {
     WiFi.begin("SSID", "PASSWORD");
     while (WiFi.status() != WL_CONNECTED) delay(200);
 
-    router.addRoute("/", dashboardPage);
+    ws.onEvent(onWsEvent);
+    server.addHandler(&ws);
 
-    server.on("/gas", [](){
-        gasValue = random(0, 100);
-        server.send(200, "text/plain", String(gasValue));
-    });
+    router.addRoute("/", dashboardPage);
 
     server.begin();
 }
 
 void loop() {
-    server.handleClient();
+    ws.cleanupClients();
+    
+    // Broadcast updates every 2 seconds
+    static unsigned long lastUpdate = 0;
+    if (millis() - lastUpdate > 2000) {
+        lastUpdate = millis();
+        gasValue = random(0, 100);
+        ws.textAll(String(gasValue));
+    }
 }

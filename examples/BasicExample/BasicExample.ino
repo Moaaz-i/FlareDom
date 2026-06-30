@@ -1,22 +1,27 @@
-#include <ESP8266WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <FlareDom.h>
 
-ESP8266WebServer server(80);
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <WiFi.h>
+#endif
+
+AsyncWebServer server(80);
+Router router(&server);
 
 Page buildPage() {
     Page p("Basic Example");
+    p.setGlobalCSS(ThemeManager::dark());
 
-    p.setGlobalCSS(
-        "body{background:#111;color:#fff;font-family:Consolas;text-align:center;padding-top:50px;}"
-        ".box{padding:20px;background:#222;border-radius:12px;display:inline-block;}"
-    );
+    Element box = Element::create("div");
+    box.style.bg("var(--bg-secondary)").padding("30px").radius("16px")
+       .display("inline-block").shadow("0 8px 32px rgba(0,0,0,0.3)");
 
-    Element box = Element::create("div").addClass("box");
     box.addChild(Element::create("h1").text("Hello to you in FlareDom"));
-    box.addChild(Element::create("p").text("This is a simple example of a page built with the library."));
+    box.addChild(Element::create("p").text("This is a simple asynchronous example."));
 
     p.add(box);
-
     return p;
 }
 
@@ -26,15 +31,11 @@ void setup() {
     WiFi.begin("SSID", "PASSWORD");
     while (WiFi.status() != WL_CONNECTED) delay(200);
 
-    server.on("/", [](){
-        Page p = buildPage();
-        String html = HtmlBuilder::build(p);
-        server.send(200, "text/html", html);
-    });
+    router.addRoute("/", buildPage);
 
     server.begin();
 }
 
 void loop() {
-    server.handleClient();
+    // No server.handleClient() needed for AsyncWebServer!
 }

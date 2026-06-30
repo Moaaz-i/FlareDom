@@ -42,7 +42,7 @@
 ## 🏗️ Architecture
 
 ```
-FlareDom v1.1.0
+FlareDom v1.2.0
 ├── Core
 │   ├── Element         — Virtual DOM node with fluent API
 │   ├── Page            — Full HTML5 document (meta, favicon, external CSS, lang)
@@ -53,25 +53,11 @@ FlareDom v1.1.0
 │
 ├── Engine
 │   ├── HtmlBuilder     — Renders & minifies final HTML
-│   ├── Router          — URL-to-Page mapping with 404 support
+│   ├── Router          — URL-to-Page mapping using ESPAsyncWebServer
 │   ├── ScriptManager   — JavaScript injection & event binding
 │   ├── ThemeManager    — Pre-built themes (dark, light, neon, cyberpunk)
-│   └── LiveValue       — Auto-updating AJAX values
-│
-└── Components (13 widgets)
-    ├── Card            — Dashboard header card
-    ├── Gauge           — SVG circular gauge (animated)
-    ├── StatusPanel     — Dynamic status display
-    ├── Button          — 6 variants with hover animations
-    ├── Table           — Dynamic table with striped rows
-    ├── Input           — Form input with label & validation
-    ├── Navbar          — Sticky navigation bar with glassmorphism
-    ├── ProgressBar     — Gradient progress bar with 4 colors
-    ├── Badge           — Status badge (5 variants)
-    ├── AlertBox        — Dismissible alert notifications
-    ├── Switch          — Toggle switch with smooth animation
-    ├── Footer          — Page footer with links
-    └── Container       — Flex/Grid layout helper
+│   ├── LiveValue       — Auto-updating AJAX values
+│   └── WebSocketValue  — Real-time WebSocket updates
 ```
 
 ---
@@ -80,10 +66,15 @@ FlareDom v1.1.0
 
 ### Installation
 
+**Dependencies:**
+This library requires:
+- `ESPAsyncWebServer`
+- `ESPAsyncTCP` (for ESP8266) or `AsyncTCP` (for ESP32)
+
 **Arduino Library Manager (Recommended):**
 1. Open Arduino IDE → **Sketch** → **Include Library** → **Manage Libraries**
 2. Search for `FlareDom`
-3. Click **Install**
+3. Click **Install** (and install the dependencies if prompted)
 
 **Manual Installation:**
 ```bash
@@ -94,10 +85,11 @@ git clone https://github.com/Moaaz-i/FlareDom.git
 ### Minimal Example
 
 ```cpp
-#include <ESP8266WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <FlareDom.h>
 
-ESP8266WebServer server(80);
+AsyncWebServer server(80);
+Router router(&server);
 
 Page buildPage() {
     Page p("My Page");
@@ -108,7 +100,7 @@ Page buildPage() {
        .display("inline-block").shadow("0 8px 32px rgba(0,0,0,0.3)");
 
     box.addChild(Element::create("h1").text("Hello FlareDom!"));
-    box.addChild(Element::create("p").text("Built entirely in C++"));
+    box.addChild(Element::create("p").text("Built entirely in C++ with ESPAsyncWebServer"));
 
     p.add(box);
     return p;
@@ -119,10 +111,7 @@ void setup() {
     WiFi.begin("YOUR_SSID", "YOUR_PASSWORD");
     while (WiFi.status() != WL_CONNECTED) delay(200);
 
-    server.on("/", []() {
-        Page p = buildPage();
-        server.send(200, "text/html", HtmlBuilder::build(p));
-    });
+    router.addRoute("/", buildPage);
 
     server.begin();
     Serial.println("Server started: http://" + WiFi.localIP().toString());

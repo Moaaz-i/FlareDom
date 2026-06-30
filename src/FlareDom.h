@@ -14,6 +14,7 @@
 #include "core/Router.h"
 #include "core/ThemeManager.h"
 #include "core/LiveValue.h"
+#include "core/WebSocketValue.h"
 
 // ─── Components ───
 #include "components/Card.h"
