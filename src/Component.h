@@ -3,5 +3,5 @@
 
 class Component {
 public:
-    virtual Element render() = 0;
+  virtual Element render() = 0;
 };
