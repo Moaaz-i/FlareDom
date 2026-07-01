@@ -10,6 +10,12 @@ struct Style {
         return *this;
     }
 
+    Style &add(const __FlashStringHelper *rule) {
+        if (raw.length()) raw += ";";
+        raw += rule;
+        return *this;
+    }
+
     String toString() const {
         return raw;
     }
