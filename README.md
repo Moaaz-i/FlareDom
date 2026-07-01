@@ -42,7 +42,7 @@
 ## 🏗️ Architecture
 
 ```
-FlareDom v1.2.0
+FlareDom v2.0.0
 ├── Core
 │   ├── Element         — Virtual DOM node with fluent API
 │   ├── Page            — Full HTML5 document (meta, favicon, external CSS, lang)
